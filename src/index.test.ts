@@ -66,7 +66,7 @@ describe("batch requests", () => {
     jest.runAllTicks();
     await expect(val1Promise).resolves.toBe("val_1");
     await expect(val2Promise).rejects.toBe(
-      "value missing for arg: 2 in the returned map from batchHandler"
+      "value missing for arg: 2 in the returned Map from batchHandler"
     );
   });
 });

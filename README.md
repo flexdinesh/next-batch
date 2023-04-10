@@ -22,26 +22,28 @@ User: {
       // unique string key to collect all promises into a single batch
       key: "tasks",
       // batchHandler is the callback that will be invoked when the batch
-      // is flushed in the next tick. All arguments in taskBatch.add(arg)
-      // will be collected as an array and sent as an arg to this
+      // is flushed in the next tick. All keys from taskBatch.add(key)
+      // will be collected as an array and sent as an argument to this
       // batchHandler callback
-      batchHandler: async (ids: number[]) => {
+      batchHandler: async (keys: { id: number }[]) => {
         const tasks = await task.findByUserIds(fastify.db, context.reply, {
-          ids,
+          ids: keys.map((key) => key.id),
         });
-        // batch handler should return a Map with every arg in taskBatch.add(arg)
+        // batch handler should return a Map with every key in keys arg
         // and its corresponding value as a map entry.
-        const map = new Map<number, { title: string }>();
-        ids.forEach((id) => {
-          const task = tasks.filter((task) => task.id === id);
-          map.set(id, task);
+        // remember to use the same key reference and don't deconstruct
+        // and construct a new object as map key
+        const result = new Map<typeof keys[number], { title: string }>();
+        keys.forEach((key) => {
+          const task = tasks.filter((task) => task.id === key.id);
+          result.set(key, task);
         });
-        return map;
+        return result;
       },
     });
     // tasks are requested per user but resolved in batch for all users
     // via the JavaScript magic of our next-batch util
-    const tasks = await tasksBatch.add(userId);
+    const tasks = await tasksBatch.add({ id: userId });
     return tasks;
   };
 }

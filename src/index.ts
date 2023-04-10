@@ -1,7 +1,7 @@
-type BatchHandler<K, V> = (key: K[]) => Promise<Map<K, V>>;
+type BatchHandler<K, V> = (keys: K[]) => Promise<Map<K, V>>;
 type CleanupHandler = () => void;
 type BatchTask<K, V> = {
-  arg: K;
+  key: K;
   resolve: (value: V | PromiseLike<V>) => void;
   reject: (reason?: any) => void;
 };
@@ -46,34 +46,52 @@ class BatchScheduler<K = any, V = any> {
       throw new Error(`batchHandler not setup for current batch: ${this.id}`);
     }
 
-    const batchedArgs = [...this.nextBatch.keys()];
-    const result = await this.batchHandler(batchedArgs);
-    batchedArgs.forEach((arg, i) => {
-      const value = result.get(arg);
-      if (value) {
-        this.nextBatch.get(arg)?.resolve(value);
-      } else {
-        this.nextBatch
-          .get(arg)
-          ?.reject(
-            `value missing for arg: ${arg} in the returned map from batchHandler`
+    const keys = [...this.nextBatch.keys()];
+    const result = await this.batchHandler(keys);
+    const keysFromHandler = [...result.keys()];
+    // making sure users don't destructure and send a newly constructed key
+    // for object keys from batchHandler
+    const didAnyKeyMatch = [...this.nextBatch.keys()].some((key) =>
+      keysFromHandler.find((k) => k === key)
+    );
+
+    if (!didAnyKeyMatch) {
+      keys.forEach((key, i) => {
+        const task = this.nextBatch.get(key);
+        task?.reject(
+          `No task was found in batch for: ${key}. 
+          You might have probably destructured and reconstructed the argument while setting it as Map key in batchHandler.
+          batchHandler map keys are original references to the yourBatch.add(key) key. 
+          Please use the same reference to set map keys while returning the Map from batchHandler.`
+        );
+      });
+    } else {
+      keys.forEach((key) => {
+        const task = this.nextBatch.get(key);
+        const value = result.get(key);
+        if (value) {
+          task?.resolve(value);
+        } else {
+          task?.reject(
+            `value missing for key: ${key} in the returned Map from batchHandler`
           );
-      }
-    });
+        }
+      });
+    }
 
     if (typeof this.cleanupHandler === "function") {
       this.cleanupHandler();
     }
   }
 
-  async add(arg: K) {
+  async add(key: K) {
     return new Promise<V>((resolve, reject) => {
       const task = {
-        arg,
+        key,
         resolve,
         reject,
       };
-      this.nextBatch.set(arg, task);
+      this.nextBatch.set(key, task);
 
       if (!this.isBatchScheduledForNextTaskQueue) {
         this.isBatchScheduledForNextTaskQueue = true;
@@ -101,7 +119,7 @@ export const nextBatch = <K = any, V = any>({
   batchHandler,
 }: {
   key: string;
-  batchHandler: (key: Array<K>) => Promise<Map<K, V>>;
+  batchHandler: (keys: K[]) => Promise<Map<K, V>>;
 }) => {
   globalThis.__batches = globalThis.__batches
     ? globalThis.__batches
