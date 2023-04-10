@@ -26,7 +26,7 @@ User: {
       // will be collected as an array and sent as an argument to this
       // batchHandler callback
       batchHandler: async (keys: { id: number }[]) => {
-        const tasks = await task.findByUserIds(fastify.db, context.reply, {
+        const tasks = await taskDB.findByUserIds({
           ids: keys.map((key) => key.id),
         });
         // batch handler should return a Map with every key in keys arg
