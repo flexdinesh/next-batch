@@ -1,7 +1,7 @@
 {
   "name": "next-batch",
   "description": "A promise batching utility mostly used in GraphQL resolvers to avoid N + 1 data fetching.",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "author": {
     "name": "Dinesh Pandiyan",
     "email": "flexdinesh@gmail.com"
