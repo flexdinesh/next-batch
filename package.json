@@ -6,6 +6,14 @@
     "name": "Dinesh Pandiyan",
     "email": "flexdinesh@gmail.com"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flexdinesh/next-batch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/flexdinesh/next-batch/issues"
+  },
+  "homepage": "https://github.com/flexdinesh/next-batch#readme",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
